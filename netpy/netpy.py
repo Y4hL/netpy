@@ -4,7 +4,7 @@ Python Implementation of ARP Cache Poisoning
 """
 import logging
 from scapy.all import *
-from scapy.layers.l2 import getmacbyip
+from scapy.layers.l2 import getmacbyip, arping
 from scapy.layers.l2 import ARP, Ether
 from scapy.layers.inet import IP
 
@@ -30,6 +30,18 @@ def get_mac(ip_address: str) -> str:
     mac = getmacbyip(ip_address)
     logging.info('%s mac address: %s' % (ip_address, mac))
     return mac
+
+def arp_ping(target_ip: str) -> None:
+    """ ARP Ping """
+    ans, _ = srp(Ether(dst='ff:ff:ff:ff:ff:ff')/ARP(pdst=target_ip), timeout=2)
+
+    ans.summary()
+
+    if len(ans) > 0:
+        packet = ans[0][1]
+        address = (packet[ARP].psrc, packet.src)
+        logging.info('arp ping returned: %s' % str(address))
+        return address
 
 def arp_spoof(target_ip: str, source_ip: str, target_mac: str = None) -> None:
     """ ARP Spoofer """
@@ -87,4 +99,4 @@ def scan_network(network: str) -> list:
 
 if __name__ == "__main__":
     print(get_mac(get_gateway_ip()))
-    scan_network(f'{get_own_ip()}/24')
+    arping(f'{get_own_ip()}/24')
